@@ -1,0 +1,34 @@
+# Source code
+/src
+
+# Git-related
+.git
+.gitignore
+
+# TypeScript related
+tsconfig.json
+*.tsbuildinfo
+
+# Config files
+.eslintrc.js
+jest.config.js
+.prettierrc
+.editorconfig
+
+# Tests
+__tests__
+*.test.ts
+*.spec.ts
+coverage
+
+# Examples
+examples
+
+# Development files
+.vscode
+.idea
+*.log
+*.bak
+README.md
+.github
+.cursor 
