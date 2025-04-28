@@ -1,6 +1,6 @@
 # express-mcp-handler
 
-A utility for integrating Model Context Protocol (MCP) into your Express applications with both stateful and stateless modes.
+A utility for integrating Model Context Protocol (MCP) into your Express applications.
 
 ## Features
 
