@@ -38,10 +38,23 @@ const statefulMcpHandlers = statefulHandlers(serverFactory, {
 // Create stateless handler
 const statelessMcpHandler = statelessHandler(serverFactory);
 
+// Create SSE handler
+const sseMcpHandlers = sseHandlers(serverFactory, {
+  onError: (error: Error, sessionId?: string) => {
+    console.error(`[SSE][${sessionId || 'unknown'}]`, error);
+  },
+  onClose: (sessionId: string) => {
+    console.log(`SSE transport closed: ${sessionId}`);
+  }
+});
+
 // Mount handlers on different routes
 app.post('/mcp/stateful', statefulMcpHandlers.postHandler);
 app.get('/mcp/stateful', statefulMcpHandlers.getHandler);
 app.delete('/mcp/stateful', statefulMcpHandlers.deleteHandler);
+
+app.post('/mcp/messages', sseMcpHandlers.postHandler);
+app.get('/mcp/sse', sseMcpHandlers.getHandler);
 
 app.post('/mcp/stateless', statelessMcpHandler);
 

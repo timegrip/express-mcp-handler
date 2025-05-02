@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 
 /**
  * Options for configuring the stateful MCP handler
@@ -50,6 +51,21 @@ export interface StatelessHandlerOptions {
    * Optional callback triggered when an error occurs during handling
    */
   onError?: (error: Error) => void;
+}
+
+/**
+ * Options for configuring the SSE MCP handler
+ */
+export interface SSEHandlerOptions {
+  /**
+   * Optional callback triggered when an error occurs during handling
+   */
+  onError?: (error: Error, sessionId?: string) => void;
+  
+  /**
+   * Optional callback triggered when a session is closed
+   */
+  onClose?: (sessionId: string) => void;
 }
 
 /**
