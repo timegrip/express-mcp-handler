@@ -24,6 +24,11 @@ export interface StatefulHandlerOptions {
    * Optional callback triggered when an error occurs during handling
    */
   onError?: (error: Error, sessionId?: string) => void;
+  
+  /**
+   * Optional callback triggered when an invalid session is accessed (e.g., missing or unrecognized session ID)
+   */
+  onInvalidSession?: (req: Request) => void;
 }
 
 /**

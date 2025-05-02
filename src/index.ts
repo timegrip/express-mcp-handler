@@ -6,7 +6,7 @@
  */
 
 // Export the stateful handler
-export { statefulHandler } from './stateful';
+export { statefulHandlers } from './stateful';
 
 // Export the stateless handler
 export { statelessHandler } from './stateless';

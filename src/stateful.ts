@@ -2,16 +2,16 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
-import { StatefulHandlerOptions } from './types';
+import { ServerFactory, StatefulHandlerOptions } from './types';
 
-/**
- * Map to store active transports by session ID
- */
-interface TransportMap {
-  [sessionId: string]: {
-    transport: StreamableHTTPServerTransport;
-    server: McpServer;
-  };
+interface SessionTransportMap {
+  [sessionId: string]: StreamableHTTPServerTransport;
+}
+
+interface StatefulHandlers {
+  postHandler: RequestHandler;
+  getHandler: RequestHandler;
+  deleteHandler: RequestHandler;
 }
 
 /**
@@ -21,32 +21,30 @@ interface TransportMap {
  * @param options - Configuration options for the handler
  * @returns An Express request handler function
  */
-export function statefulHandler(
-  server: McpServer,
+export function statefulHandlers(
+  serverFactory: ServerFactory,
   options: StatefulHandlerOptions
-): RequestHandler {
+): StatefulHandlers {
   // Store active transports by session ID
-  const transports: TransportMap = {};
+  const transports: SessionTransportMap = {};
 
-  return async (req: Request, res: Response, next: NextFunction) => {
+  const postHandler = async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Check for existing session ID
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
       let transport: StreamableHTTPServerTransport;
-      let transportServer = server;
 
       if (sessionId && transports[sessionId]) {
         // Reuse existing transport
-        transport = transports[sessionId].transport;
-        transportServer = transports[sessionId].server;
+        transport = transports[sessionId];
       } else if (!sessionId && req.method === 'POST' && isInitializeRequest(req.body)) {
         // New initialization request
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: options.sessionIdGenerator,
           onsessioninitialized: (newSessionId: string) => {
             // Store the transport by session ID
-            transports[newSessionId] = { transport, server: transportServer };
-            
+            transports[newSessionId] = transport;
+
             // Call user-provided initialization callback if defined
             if (options.onSessionInitialized) {
               options.onSessionInitialized(newSessionId);
@@ -67,10 +65,13 @@ export function statefulHandler(
           }
         };
 
-        // Connect transport to the MCP server
-        await transportServer.connect(transport);
+        // Connect transport to a new MCP server instance
+        await serverFactory().connect(transport);
       } else {
         // Invalid request - missing or invalid session
+        if (options.onInvalidSession) {
+          options.onInvalidSession(req);
+        }
         return res.status(400).json({
           jsonrpc: '2.0',
           error: {
@@ -81,12 +82,7 @@ export function statefulHandler(
         });
       }
 
-      // Handle the request based on method
-      if (req.method === 'POST') {
-        await transport.handleRequest(req, res, req.body);
-      } else {
-        await transport.handleRequest(req, res);
-      }
+      await transport.handleRequest(req, res, req.body);
     } catch (error) {
       // Handle errors
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
@@ -113,4 +109,38 @@ export function statefulHandler(
       }
     }
   };
-} 
+
+  // Reusable handler for GET and DELETE requests
+  const handleSessionRequest: RequestHandler = async (req, res, next) => {
+    try {
+      const sessionId = req.headers['mcp-session-id'] as string | undefined;
+      if (!sessionId || !transports[sessionId]) {
+        if (options.onInvalidSession) {
+          options.onInvalidSession(req);
+        }
+        res.status(400).send('Invalid or missing session ID');
+        return;
+      }
+
+      const transport = transports[sessionId];
+      await transport.handleRequest(req, res);
+    } catch (error) {
+      const sessionId = req.headers['mcp-session-id'] as string | undefined;
+      if (options.onError) {
+        options.onError(error as Error, sessionId);
+      }
+      if (!res.headersSent) {
+        res.status(500).send('Internal server error');
+      }
+      if (next) {
+        next(error);
+      }
+    }
+  };
+
+  return {
+    postHandler: postHandler,
+    getHandler: handleSessionRequest,
+    deleteHandler: handleSessionRequest,
+  };
+}
