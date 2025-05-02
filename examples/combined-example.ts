@@ -2,7 +2,7 @@ import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { statefulHandlers, statelessHandler } from '../src';
+import { statefulHandlers, statelessHandler, sseHandlers } from '../src';
 
 // Create Express app
 const app = express();
