@@ -6,6 +6,7 @@ A utility for integrating Model Context Protocol (MCP) into your Express applica
 
 - **Stateful Handler**: Maintains long-lived sessions with session IDs and Server-Sent Events (SSE).
 - **Stateless Handler**: Handles each request in complete isolation for simple, one-off interactions.
+- **SSE Handler**: Handles Model Context Protocol (MCP) over Server-Sent Events (SSE) with dedicated GET and POST endpoints.
 - Flexible and easy-to-use API that plugs directly into Express routes.
 
 ## Installation
@@ -100,6 +101,33 @@ Each request:
 - Ensures isolation and no session tracking.
 - Suitable for simple or serverless environments.
 
+### SSE Mode
+Use `sseHandlers` to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
+
+```ts
+import { sseHandlers } from 'express-mcp-handler';
+
+// Provide a factory function that returns a fresh McpServer for each SSE connection
+const handlers = sseHandlers(serverFactory, {
+  onError: (error: Error, sessionId?: string) => {
+    console.error(`[SSE][${sessionId || 'unknown'}]`, error);
+  },
+  onClose: (sessionId: string) => {
+    console.log(`[SSE] transport closed: ${sessionId}`);
+  },
+});
+
+// Mount the SSE endpoints
+app.get('/sse', handlers.getHandler);
+app.post('/messages', handlers.postHandler);
+app.listen(3002, () => {
+  console.log('Express MCP SSE server running on port 3002');
+});
+```
+
+- **GET /sse**: Establishes the SSE stream and returns a `mcp-session-id` header.
+- **POST /messages**: Sends MCP messages over the SSE transport for the given `mcp-session-id` query parameter.
+
 ## API Reference
 
 ### statefulHandler
@@ -112,6 +140,7 @@ function statefulHandler(
     onSessionInitialized?: (sessionId: string) => void;
     onSessionClosed?: (sessionId: string) => void;
     onError?: (error: Error, sessionId?: string) => void;
+    onInvalidSession?: (req: express.Request) => void;
   }
 ): express.RequestHandler;
 ```
@@ -121,6 +150,7 @@ function statefulHandler(
 - **options.onSessionInitialized** _(optional)_: Callback invoked with the new session ID.
 - **options.onSessionClosed** _(optional)_: Callback invoked when a session is closed.
 - **options.onError** _(optional)_: Callback invoked on errors.
+- **options.onInvalidSession** _(optional)_: Callback invoked when an invalid session is accessed.
 
 ### statelessHandler
 
@@ -139,6 +169,22 @@ function statelessHandler(
 - **options.sessionIdGenerator** _(optional)_: Override transport session ID generation.
 - **options.onClose** _(optional)_: Callback fired when the request/response cycle ends.
 - **options.onError** _(optional)_: Callback fired on errors during handling.
+
+### sseHandlers
+
+```ts
+function sseHandlers(
+  serverFactory: ServerFactory,
+  options: SSEHandlerOptions
+): {
+  getHandler: express.RequestHandler;
+  postHandler: express.RequestHandler;
+};
+```
+
+- **serverFactory**: Factory function that returns a fresh `McpServer` for each SSE connection.
+- **options.onError** _(optional)_: Callback invoked on errors, receives `error` and optional `sessionId`.
+- **options.onClose** _(optional)_: Callback invoked when an SSE session is closed, receives `sessionId`.
 
 ## Development
 
