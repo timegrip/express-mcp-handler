@@ -2,6 +2,12 @@
 
 A utility for integrating Model Context Protocol (MCP) into your Express applications.
 
+[![npm version](https://img.shields.io/npm/v/express-mcp-handler.svg)](https://www.npmjs.com/package/express-mcp-handler)
+[![npm downloads](https://img.shields.io/npm/dm/express-mcp-handler.svg)](https://www.npmjs.com/package/express-mcp-handler)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/node/v/express-mcp-handler.svg)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
+
 ## Features
 
 - **Stateful Handler**: Maintains long-lived sessions with session IDs and Server-Sent Events (SSE).
