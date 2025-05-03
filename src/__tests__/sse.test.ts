@@ -132,7 +132,9 @@ describe('SSE Handler Coverage', () => {
   };
   let options: SSEHandlerOptions;
   
-  // Set up a mock transports registry that the tests can access directly
+  // Set up a mock transports registry that tests can access directly
+  // This simulates the internal transports registry inside the handlers
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mockTransports: Record<string, any> = {};
   
   beforeEach(() => {
@@ -248,8 +250,39 @@ describe('SSE Handler Coverage', () => {
   });
   
   it.skip('should handle POST requests for existing sessions', async () => {
-    // This test is skipped due to implementation changes
-    // ... existing code ...
+    // Skipped: This test is difficult to implement correctly without more detailed knowledge
+    // of the internal transport registry implementation in the SSE handlers.
+    // The test needs to register a mock transport with the right session ID that
+    // the handler can find when executing the POST request.
+    
+    // Setup
+    const handlers = sseHandlers(() => mockServer as McpServer, options);
+    
+    // First create a session with GET
+    await handlers.getHandler(mockRequest as Request, mockResponse as Response, mockNext);
+    
+    // Verify the session was created
+    expect(mockTransports['test-session-id']).toBe(mockTransport);
+    
+    // Reset mocks
+    jest.clearAllMocks();
+    
+    // Create a POST request with the session ID
+    const postRequest = {
+      method: 'POST',
+      query: { sessionId: 'test-session-id' },
+      body: { message: 'test' }
+    } as unknown as Request;
+    
+    // Then handle a POST request
+    await handlers.postHandler(postRequest, mockResponse as Response, mockNext);
+    
+    // Verify handlePostMessage was called with the right arguments
+    expect(mockTransport.handlePostMessage).toHaveBeenCalledWith(
+      postRequest,
+      mockResponse,
+      postRequest.body
+    );
   });
   
   it('should return 400 for POST with invalid session ID', async () => {
@@ -268,8 +301,44 @@ describe('SSE Handler Coverage', () => {
   });
   
   it.skip('should handle POST request errors', async () => {
-    // This test is skipped due to implementation changes
-    // ... existing code ...
+    // Skipped: This test is difficult to implement correctly without more detailed knowledge
+    // of the internal transport registry implementation in the SSE handlers.
+    // The test needs to register a mock transport with the right session ID that
+    // the handler can find when executing the POST request.
+    
+    // Setup handlers
+    const handlers = sseHandlers(() => mockServer as McpServer, options);
+    
+    // First create a session with GET
+    await handlers.getHandler(mockRequest as Request, mockResponse as Response, mockNext);
+    
+    // Verify the session was created
+    expect(mockTransports['test-session-id']).toBe(mockTransport);
+    
+    // Reset mocks
+    jest.clearAllMocks();
+    
+    // Configure mockTransport.handlePostMessage to throw an error
+    const testError = new Error('Post error');
+    mockTransport.handlePostMessage = jest.fn().mockImplementation(() => {
+      throw testError;
+    });
+    
+    // Create a POST request with the session ID
+    const postRequest = {
+      method: 'POST',
+      query: { sessionId: 'test-session-id' },
+      body: { message: 'test' }
+    } as unknown as Request;
+    
+    // Execute the POST request which will now throw an error
+    await handlers.postHandler(postRequest, mockResponse as Response, mockNext);
+    
+    // Verify error handling
+    expect(options.onError).toHaveBeenCalledWith(testError, 'test-session-id');
+    expect(mockResponse.status).toHaveBeenCalledWith(500);
+    expect(mockResponse.send).toHaveBeenCalledWith('Internal server error');
+    expect(mockNext).toHaveBeenCalledWith(testError);
   });
   
   it('should call onClose when connection closes', async () => {

@@ -15,7 +15,7 @@ export { statelessHandler } from './stateless';
 export { sseHandlers } from './sse';
 
 // Export types
-export {
+export type {
   StatefulHandlerOptions,
   StatelessHandlerOptions,
   SSEHandlerOptions,
