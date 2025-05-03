@@ -10,4 +10,13 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/**/__tests__/**'
   ],
+  coverageThreshold: {
+    global: {
+      branches: 45,
+      functions: 70,
+      lines: 55,
+      statements: 55
+    }
+  },
+  coverageReporters: ['json', 'lcov', 'text', 'clover']
 }; 

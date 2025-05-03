@@ -7,6 +7,8 @@ A utility for integrating Model Context Protocol (MCP) into your Express applica
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/node/v/express-mcp-handler.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
+[![CI](https://github.com/jhgaylor/express-mcp-handler/actions/workflows/ci.yml/badge.svg)](https://github.com/jhgaylor/express-mcp-handler/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/jhgaylor/express-mcp-handler/branch/main/graph/badge.svg)](https://codecov.io/gh/jhgaylor/express-mcp-handler)
 
 ## Features
 
@@ -195,12 +197,39 @@ function sseHandlers(
 ## Development
 
 ```bash
-git clone https://github.com/your-org/express-mcp-handler.git
+git clone https://github.com/jhgaylor/express-mcp-handler.git
 cd express-mcp-handler
 npm install
 npm run build
 npm test
 ```
+
+### Test Coverage
+
+To run tests with coverage reporting:
+
+```bash
+npm run test:coverage
+```
+
+The project currently has the following coverage thresholds:
+- Statements: 55%
+- Branches: 45%
+- Functions: 70%
+- Lines: 55%
+
+You can find the HTML coverage report in the `coverage/lcov-report` directory after running the coverage command.
+
+### Continuous Integration
+
+This project uses GitHub Actions for continuous integration. Every push to the main branch and pull request will:
+
+1. Run the lint check
+2. Build the project
+3. Run tests with coverage
+4. Upload coverage reports to [Codecov](https://codecov.io/gh/jhgaylor/express-mcp-handler)
+
+You can view the current CI status in the badge at the top of this README or on the [Actions tab](https://github.com/jhgaylor/express-mcp-handler/actions) of the GitHub repository.
 
 ## License
 
