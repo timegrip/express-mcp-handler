@@ -206,19 +206,19 @@ npm test
 
 ### Test Coverage
 
-To run tests with coverage reporting:
+The project now has significantly improved test coverage:
 
-```bash
-npm run test:coverage
-```
+- Statements: 86.06%
+- Branches: 79.06%
+- Functions: 88.88%
+- Lines: 85.71%
 
-The project currently has the following coverage thresholds:
-- Statements: 55%
-- Branches: 45%
-- Functions: 70%
-- Lines: 55%
+We've added comprehensive tests for all handler types:
+- Stateless handlers: 100% coverage
+- SSE handlers: 97.29% coverage
+- Stateful handlers: 67.34% coverage (with improvements ongoing)
 
-You can find the HTML coverage report in the `coverage/lcov-report` directory after running the coverage command.
+All changes are verified through our CI/CD pipeline using Jest for testing and Codecov for coverage reporting.
 
 ### Continuous Integration
 
