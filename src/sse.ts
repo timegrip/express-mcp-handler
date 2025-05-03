@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { ServerFactory, SSEHandlerOptions } from './types';
 
 interface SSESessionTransportMap {
@@ -59,15 +58,22 @@ export function sseHandlers(
     try {
       // Create SSE transport for legacy clients
       const transport = new SSEServerTransport('/messages', res);
+      
       transport.onerror = (error) => {
         options.onError?.(error as Error, transport.sessionId);
       }
+      
+      // Store the session ID for use in the close handler
+      const sessionId = transport.sessionId;
+      
       transport.onclose = () => {
-        options.onClose?.(transport.sessionId);
+        options.onClose?.(sessionId);
       }
+      
       transports[transport.sessionId] = transport;
         
       res.on("close", () => {
+        options.onClose?.(sessionId);
         delete transports[transport.sessionId];
       });
 

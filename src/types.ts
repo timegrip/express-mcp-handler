@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 
 /**
  * Options for configuring the stateful MCP handler
