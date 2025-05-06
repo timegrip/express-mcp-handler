@@ -1,6 +1,6 @@
 # express-mcp-handler
 
-A utility for integrating Model Context Protocol (MCP) into your Express applications.
+A middleware for integrating [Model Context Protocol (MCP)](https://modelcontextprotocol.github.io) with Express applications, enabling seamless communication between LLMs and tools.
 
 [![npm version](https://img.shields.io/npm/v/express-mcp-handler.svg)](https://www.npmjs.com/package/express-mcp-handler)
 [![npm downloads](https://img.shields.io/npm/dm/express-mcp-handler.svg)](https://www.npmjs.com/package/express-mcp-handler)
@@ -10,12 +10,18 @@ A utility for integrating Model Context Protocol (MCP) into your Express applica
 [![CI](https://github.com/jhgaylor/express-mcp-handler/actions/workflows/ci.yml/badge.svg)](https://github.com/jhgaylor/express-mcp-handler/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/jhgaylor/express-mcp-handler/branch/main/graph/badge.svg)](https://codecov.io/gh/jhgaylor/express-mcp-handler)
 
+## What is Model Context Protocol (MCP)?
+
+[Model Context Protocol (MCP)](https://modelcontextprotocol.github.io) is an open protocol for integrating large language models (LLMs) with external data sources and tools. It enables AI assistants to access real-time data, execute operations, and interact with various services through a standardized interface.
+
 ## Features
 
-- **Stateful Handler**: Maintains long-lived sessions with session IDs and Server-Sent Events (SSE).
+- **Stateful Handler**: Can handle one off requests or maintain long-lived sessions with session IDs and Server-Sent Events (SSE).
 - **Stateless Handler**: Handles each request in complete isolation for simple, one-off interactions.
 - **SSE Handler**: Handles Model Context Protocol (MCP) over Server-Sent Events (SSE) with dedicated GET and POST endpoints.
-- Flexible and easy-to-use API that plugs directly into Express routes.
+- **Type-Safe API**: Built with TypeScript for reliable integration.
+- **Flexible Configuration**: Customizable error handling, session management, and lifecycle hooks.
+- **Express Integration**: Plugs directly into Express routes with middleware pattern.
 
 ## Installation
 
@@ -31,50 +37,93 @@ Or yarn:
 yarn add express-mcp-handler
 ```
 
+Or pnpm:
+
+```bash
+pnpm add express-mcp-handler
+```
+
 ### Peer Dependencies
 
-- `express` >= 4.x
-- `@modelcontextprotocol/sdk`
+This package requires the following peer dependencies:
 
-## Usage
+- `express` >= 4.0.0
+- `@modelcontextprotocol/sdk` >= 1.10.2
+- `zod` >= 3.0.0
 
-Import the handlers from the package and mount them on your Express app:
+Install them if you haven't already:
+
+```bash
+npm install express @modelcontextprotocol/sdk zod
+```
+
+## Quick Start
+
+Here's a basic example to get you started:
 
 ```ts
 import express from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { statefulHandler, statelessHandler } from 'express-mcp-handler';
+import { statelessHandler } from 'express-mcp-handler';
 
 const app = express();
 app.use(express.json());
+
+// Create a factory function that returns a new McpServer instance for each request
+const serverFactory = () => new McpServer({
+  name: 'my-mcp-server',
+  version: '1.0.0',
+});
+
+// Mount the stateless handler
+app.post('/mcp', statelessHandler(serverFactory));
+
+app.listen(3000, () => {
+  console.log('Express MCP server running on port 3000');
+});
 ```
+
+## Usage
+
+Express-mcp-handler provides three handler types to suit different use cases:
 
 ### Stateful Mode
 
-Use `statefulHandler` to establish reusable sessions between client and server.
+Use `statefulHandler` to establish reusable sessions between client and server, ideal for maintaining context across multiple interactions:
 
 ```ts
+import express from 'express';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { statefulHandler } from 'express-mcp-handler';
 import { randomUUID } from 'node:crypto';
 
+const app = express();
+app.use(express.json());
+
+// Create an MCP server instance
 const server = new McpServer({
   name: 'my-server',
   version: '1.0.0',
 });
 
+// Configure handler options
 const handlerOptions = {
-  sessionIdGenerator: randomUUID,
+  sessionIdGenerator: randomUUID, // Function to generate unique session IDs
   onSessionInitialized: (sessionId: string) => {
     console.log(`Session initialized: ${sessionId}`);
+    // You could store session metadata or initialize resources here
   },
   onSessionClosed: (sessionId: string) => {
     console.log(`Session closed: ${sessionId}`);
-    // perform cleanup logic here
+    // Perform cleanup logic here
   },
   onError: (error: Error, sessionId?: string) => {
     console.error(`Error in session ${sessionId}:`, error);
+    // Handle errors for monitoring or logging
   }
 };
 
+// Mount the handlers for different HTTP methods
 app.post('/mcp', statefulHandler(server, handlerOptions));
 app.get('/mcp', statefulHandler(server, handlerOptions));
 app.delete('/mcp', statefulHandler(server, handlerOptions));
@@ -84,57 +133,94 @@ app.listen(3000, () => {
 });
 ```
 
-The handler will:
+The stateful handler:
 
-- Initialize a new session on the first request (with no `mcp-session-id` header).
-- Return a `mcp-session-id` header that clients must include in subsequent requests.
-- Manage Server-Sent Events (SSE) to push messages from the server to the client.
-- Automatically clean up sessions when closed.
+- Initializes a new session on the first request (with no `mcp-session-id` header)
+- Returns a `mcp-session-id` header that clients must include in subsequent requests
+- Manages Server-Sent Events (SSE) to push messages from the server to the client
+- Automatically cleans up sessions when closed
 
 ### Stateless Mode
 
-Use `statelessHandler` for one-off request handling with no session management:
+Use `statelessHandler` for one-off request handling with no session management, perfect for serverless environments or simple requests:
 
 ```ts
-app.post('/mcp', statelessHandler());
+import express from 'express';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { statelessHandler } from 'express-mcp-handler';
+
+const app = express();
+app.use(express.json());
+
+// Function that creates a fresh McpServer for each request
+const serverFactory = () => new McpServer({
+  name: 'stateless-mcp-server',
+  version: '1.0.0',
+});
+
+// Configure with custom error handling
+const options = {
+  onError: (error: Error) => {
+    console.error('MCP error:', error);
+    // Add custom error reporting logic here
+  }
+};
+
+app.post('/mcp', statelessHandler(serverFactory, options));
 
 app.listen(3000, () => {
   console.log('Express Stateless MCP server running on port 3000');
 });
 ```
 
-Each request:
+Each stateless request:
 
-- Creates a fresh transport and server instance.
-- Ensures isolation and no session tracking.
-- Suitable for simple or serverless environments.
+- Creates a fresh transport and server instance
+- Ensures complete isolation with no session tracking
+- Is suitable for simple or serverless environments
 
 ### SSE Mode
-Use `sseHandlers` to handle Model Context Protocol (MCP) over Server-Sent Events (SSE).
+
+Use `sseHandlers` to handle Model Context Protocol (MCP) over Server-Sent Events (SSE), ideal for real-time streaming responses:
 
 ```ts
+import express from 'express';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { sseHandlers } from 'express-mcp-handler';
 
+const app = express();
+app.use(express.json());
+
 // Provide a factory function that returns a fresh McpServer for each SSE connection
+const serverFactory = () => new McpServer({
+  name: 'sse-mcp-server',
+  version: '1.0.0',
+});
+
+// Configure SSE handlers
 const handlers = sseHandlers(serverFactory, {
   onError: (error: Error, sessionId?: string) => {
     console.error(`[SSE][${sessionId || 'unknown'}]`, error);
   },
   onClose: (sessionId: string) => {
     console.log(`[SSE] transport closed: ${sessionId}`);
+    // Clean up any session resources
   },
 });
 
 // Mount the SSE endpoints
 app.get('/sse', handlers.getHandler);
 app.post('/messages', handlers.postHandler);
+
 app.listen(3002, () => {
   console.log('Express MCP SSE server running on port 3002');
 });
 ```
 
-- **GET /sse**: Establishes the SSE stream and returns a `mcp-session-id` header.
-- **POST /messages**: Sends MCP messages over the SSE transport for the given `mcp-session-id` query parameter.
+SSE handlers provide:
+
+- **GET /sse**: Establishes the SSE stream and returns a `mcp-session-id` header
+- **POST /messages**: Sends MCP messages over the SSE transport using the `mcp-session-id` query parameter
 
 ## API Reference
 
@@ -153,12 +239,14 @@ function statefulHandler(
 ): express.RequestHandler;
 ```
 
-- **server**: Instance of `McpServer` to handle protocol logic.
-- **options.sessionIdGenerator**: Function that returns a unique session ID.
-- **options.onSessionInitialized** _(optional)_: Callback invoked with the new session ID.
-- **options.onSessionClosed** _(optional)_: Callback invoked when a session is closed.
-- **options.onError** _(optional)_: Callback invoked on errors.
-- **options.onInvalidSession** _(optional)_: Callback invoked when an invalid session is accessed.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `server` | `McpServer` | Instance of `McpServer` to handle protocol logic |
+| `options.sessionIdGenerator` | `() => string` | Function that returns a unique session ID |
+| `options.onSessionInitialized` | `(sessionId: string) => void` | _(optional)_ Callback invoked with the new session ID |
+| `options.onSessionClosed` | `(sessionId: string) => void` | _(optional)_ Callback invoked when a session is closed |
+| `options.onError` | `(error: Error, sessionId?: string) => void` | _(optional)_ Callback invoked on errors |
+| `options.onInvalidSession` | `(req: express.Request) => void` | _(optional)_ Callback invoked when an invalid session is accessed |
 
 ### statelessHandler
 
@@ -173,10 +261,12 @@ function statelessHandler(
 ): express.RequestHandler;
 ```
 
-- **serverFactory**: Function that returns a new server instance.
-- **options.sessionIdGenerator** _(optional)_: Override transport session ID generation.
-- **options.onClose** _(optional)_: Callback fired when the request/response cycle ends.
-- **options.onError** _(optional)_: Callback fired on errors during handling.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `serverFactory` | `() => McpServer` | Function that returns a new server instance for each request |
+| `options.sessionIdGenerator` | `() => string` | _(optional)_ Override transport session ID generation |
+| `options.onClose` | `(req: express.Request, res: express.Response) => void` | _(optional)_ Callback fired when the request/response cycle ends |
+| `options.onError` | `(error: Error) => void` | _(optional)_ Callback fired on errors during handling |
 
 ### sseHandlers
 
@@ -190,11 +280,59 @@ function sseHandlers(
 };
 ```
 
-- **serverFactory**: Factory function that returns a fresh `McpServer` for each SSE connection.
-- **options.onError** _(optional)_: Callback invoked on errors, receives `error` and optional `sessionId`.
-- **options.onClose** _(optional)_: Callback invoked when an SSE session is closed, receives `sessionId`.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `serverFactory` | `ServerFactory` | Factory function that returns a fresh `McpServer` for each SSE connection |
+| `options.onError` | `(error: Error, sessionId?: string) => void` | _(optional)_ Callback invoked on errors, receives `error` and optional `sessionId` |
+| `options.onClose` | `(sessionId: string) => void` | _(optional)_ Callback invoked when an SSE session is closed, receives `sessionId` |
+
+## Error Handling
+
+All handler types support custom error handling through their options:
+
+```ts
+// Example of custom error handling for stateful handler
+const handlerOptions = {
+  // ... other options
+  onError: (error: Error, sessionId?: string) => {
+    console.error(`Error in session ${sessionId}:`, error);
+    // Send error to monitoring service
+    Sentry.captureException(error, {
+      extra: { sessionId }
+    });
+  }
+};
+```
+
+## TypeScript Support
+
+This package is written in TypeScript and provides type definitions for all exports. When using TypeScript, you'll get full IntelliSense and type checking.
+
+```ts
+import { statefulHandler, StatefulHandlerOptions } from 'express-mcp-handler';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+
+// Type-safe options
+const options: StatefulHandlerOptions = {
+  sessionIdGenerator: () => Date.now().toString(),
+  onError: (error, sessionId) => {
+    // TypeScript knows the types of these parameters
+    console.error(`Error in session ${sessionId}:`, error);
+  }
+};
+
+const server = new McpServer({
+  name: 'typed-server',
+  version: '1.0.0',
+});
+
+// Type-safe handler
+app.post('/mcp', statefulHandler(server, options));
+```
 
 ## Development
+
+To contribute to this project:
 
 ```bash
 git clone https://github.com/jhgaylor/express-mcp-handler.git
@@ -206,17 +344,7 @@ npm test
 
 ### Test Coverage
 
-The project now has significantly improved test coverage:
-
-- Statements: 86.06%
-- Branches: 79.06%
-- Functions: 88.88%
-- Lines: 85.71%
-
-We've added comprehensive tests for all handler types:
-- Stateless handlers: 100% coverage
-- SSE handlers: 97.29% coverage
-- Stateful handlers: 67.34% coverage (with improvements ongoing)
+The project has solid test coverage and promises to maintain it.
 
 All changes are verified through our CI/CD pipeline using Jest for testing and Codecov for coverage reporting.
 
@@ -233,7 +361,7 @@ You can view the current CI status in the badge at the top of this README or on 
 
 ## License
 
-MIT License
+[MIT License](LICENSE)
 
 ## Publishing to npm
 
@@ -252,3 +380,23 @@ To bump, tag, and push a new version:
 npm version patch    # or minor, major
 git push origin main --tags
 ```
+
+## Handler Types at a Glance
+
+| Handler          | Scenario                        | Sessions | Streaming |
+|------------------|---------------------------------|----------|-----------|
+| statelessHandler | One-off or serverless workloads | No       | No        |
+| statefulHandler  | Multi-turn interactions         | Yes      | Yes       |
+| sseHandlers      | Real-time SSE streaming         | Yes      | Yes       |
+
+## Troubleshooting
+
+**Missing `mcp-session-id` header**  
+Ensure the client includes the `mcp-session-id` header returned on the initial request.
+
+**Transport connection closed prematurely**  
+Verify network connectivity and ensure the client properly handles SSE events.
+
+## Changelog
+
+All notable changes to this project are documented in the [CHANGELOG.md](CHANGELOG.md).
