@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
-import { ServerFactory, SSEHandlerOptions } from './types';
+import { ServerFactory, SSEHandlerOptions } from './types.js';
 
 interface SSESessionTransportMap {
   [sessionId: string]: SSEServerTransport;

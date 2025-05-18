@@ -1,7 +1,7 @@
 import express from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { statelessHandler } from '../src';
+import { statelessHandler } from '../src/index.js';
 
 // Create Express app
 const app = express();
@@ -26,10 +26,10 @@ const createServer = () => {
 
 // Configure the stateless handler
 const handler = statelessHandler(createServer, {
-  onClose: (req, res) => {
+  onClose: (req: any, res: any) => {
     console.log('Request completed and transport closed');
   },
-  onError: (error) => {
+  onError: (error: any) => {
     console.error('Error handling request:', error);
   }
 });

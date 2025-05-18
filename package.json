@@ -1,6 +1,6 @@
 {
   "name": "express-mcp-handler",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Express middleware for handling Model Context Protocol (MCP) requests",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -55,5 +55,6 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.10.2"
-  }
+  },
+  "type": "module"
 }

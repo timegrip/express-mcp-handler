@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { ServerFactory, StatelessHandlerOptions } from './types';
+import { ServerFactory, StatelessHandlerOptions } from './types.js';
 
 /**
  * Creates an Express middleware handler for stateless MCP interactions

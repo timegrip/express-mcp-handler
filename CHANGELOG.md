@@ -1,3 +1,7 @@
+# 0.3.0
+
+Change package type to module.
+
 # 0.2.0
 
 Drop Node 16 support.

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
-import { ServerFactory, StatefulHandlerOptions } from './types';
+import { ServerFactory, StatefulHandlerOptions } from './types.js';
 
 interface SessionTransportMap {
   [sessionId: string]: StreamableHTTPServerTransport;

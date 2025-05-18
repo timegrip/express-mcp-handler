@@ -6,13 +6,13 @@
  */
 
 // Export the stateful handler
-export { statefulHandlers } from './stateful';
+export { statefulHandlers } from './stateful.js';
 
 // Export the stateless handler
-export { statelessHandler } from './stateless';
+export { statelessHandler } from './stateless.js';
 
 // Export the SSE handler
-export { sseHandlers } from './sse';
+export { sseHandlers } from './sse.js';
 
 // Export types
 export type {
@@ -20,4 +20,4 @@ export type {
   StatelessHandlerOptions,
   SSEHandlerOptions,
   ServerFactory
-} from './types'; 
+} from './types.js'; 
